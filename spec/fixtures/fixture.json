@@ -1,0 +1,37 @@
+[{
+    "id": "p1",
+    "group": "short_term",
+    "type": "capture",
+    "co2_volume": 1.0,
+    "price": 232.0,
+    "min_units": 5,
+    "max_units": 200,
+    "time": 2,
+    "time_unit": "day",
+    "continent": "c1"
+ },
+ {
+     "id": "p2",
+     "group": "medium_term",
+     "type": "protection",
+     "co2_volume": 30,
+     "price": 100.0,
+     "min_units": 5,
+     "max_units": 400,
+     "time": 10,
+     "time_unit": "year",
+     "continent": "c1"
+ },
+ {
+     "id": "p3",
+     "group": "long_term",
+     "type": "reforestation",
+     "co2_volume": 30,
+     "price": "10",
+     "min_units": 5,
+     "max_units": 500,
+     "time": 140,
+     "time_unit": "year",
+     "continent": "c2"
+ }
+]

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require 'optparse'
-require 'json'
-require_relative 'lib/parsing'
+require_relative 'lib/parser'
 
-parse_cmd!
-hash = parse_input(read_input)
+Parser.read_args
+file = Parser.read_input_file
+exit 1 unless file
+hash = Parser.parse_input(file)
 puts hash
