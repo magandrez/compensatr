@@ -97,4 +97,8 @@ RSpec.configure do |config|
   #   # test failures related to randomization by passing the same `--seed` value
   #   # as the one that triggered the failure.
   #   Kernel.srand config.seed
+
+  # Supress $stdout when running Rspec
+  # TODO Switch to a logging mechanism like ::Logger
+  config.before { allow($stdout).to receive(:puts) }
 end
