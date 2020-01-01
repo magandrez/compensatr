@@ -76,6 +76,17 @@ def calculate_price_per_unit(array)
   array
 end
 
+def valid_project_constraints(selection)
+  reps = selection.each_with_object(Hash.new(0)) { |h1, h2| h2[h1[:id]] += 1 }
+  req_reps = selection.all? do |proj|
+    reps_in_proj = reps[proj[:id]]
+    return false unless(reps_in_proj >= proj[:min_units]) &&  (reps_in_proj <= proj[:max_units])
+    true
+  end
+
+  req_reps
+end
+
 
 if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
   cmd_input = InputParser.new
@@ -101,6 +112,7 @@ if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
       selection.append(pick)
       total_value += pick[:yearly_co2_vol]
     end
+    next unless valid_project_constraints(selection)
     if total_value > best_value
       best_selection = selection.dup
       best_value = total_value
