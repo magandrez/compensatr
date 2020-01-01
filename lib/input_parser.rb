@@ -12,14 +12,23 @@ class InputParser
   end
 
   def read_args
+    # Default parameters
+    # Could be extracted to a file and read from there
+    # using, e.g. https://github.com/bkeepers/dotenv
     params = {
-      min_continents: 1
+      min_continents: 1,
+      min_short_term_percent: 0.0,
+      min_medium_term_percent: 0.0,
+      min_long_term_percent: 0.0
     }
     OptionParser.new do |opts|
       opts.banner = 'Usage: compensatr.rb -f <path> [options]'
       opts.on('-f <path>', '--file <path>', String, 'Source file of projects')
       opts.on('-m <value>', '--money <value>', Float, 'Amount of money to be used')
       opts.on('-c <value>', '--min_continents <value>', Integer, 'Minimum number of continents where projects should be distributed, defaults to 1')
+      opts.on('--min_short_term_percent <value>', Float, 'Minimum percentage of short term projects to be bought, defaults to 0')
+      opts.on('--min_medium_term_percent <value>', Float, 'Minimum percentage of medium term projects to be bought, defaults to 0')
+      opts.on('--min_long_term_percent <value>', Float, 'Minimum percentage of long term projects to be bought, defaults to 0')
       opts.on('-h', '--help', 'Prints this help') do
         puts opts
         exit
@@ -28,6 +37,11 @@ class InputParser
 
     raise OptionParser::MissingArgument if params[:file].nil?
 
+    group_keys = [ :min_short_term_percent,
+      :min_medium_term_percent,
+      :min_long_term_percent ]
+    min_groups = params.select {|k, v| group_keys.include?(k) }
+    params[:groups] = min_groups
     params
   end
 

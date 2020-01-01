@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'lib/input_parser'
+require 'set'
 
 TIME_MAP = {
   'year' => 1,
@@ -87,9 +88,68 @@ def valid_project_constraints(selection)
   req_reps
 end
 
+def count_continents(projects)
+  projects.map { |h| h[:continent] }.uniq.size
+end
+
 def valid_min_continents(selection, min_continents)
-  different_continents = selection.map { |h| h[:continent] }.uniq.size
-  different_continents >= min_continents
+  count_continents(selection) >= min_continents
+end
+
+def summarise_expenditure(projects)
+  sum_short = projects.map {|proj| proj[:price] if proj[:group] == "short_term" }.compact.reduce(:+)
+  sum_medium = projects.map {|proj| proj[:price] if proj[:group] == "medium_term" }.compact.reduce(:+)
+  sum_long = projects.map {|proj| proj[:price] if proj[:group] == "long_term" }.compact.reduce(:+)
+
+  return { short: sum_short.to_f,
+    medium: sum_medium.to_f,
+    long: sum_long.to_f }
+end
+
+def validate_min_expenditures(sums, expenditure, groups)
+  # sum might be nil (lack of projects in said group)
+  # !! converts nil into a boolean
+  short_term_ok = !!sums[:short] && (sums[:short] >= expenditure * (groups[:min_short_term_percent]/100))
+  medium_term_ok = !!sums[:medium] && (sums[:medium] >= expenditure * (groups[:min_medium_term_percent]/100))
+  long_term_ok = !!sums[:long] && (sums[:long] >= expenditure * (groups[:min_long_term_percent]/100))
+
+  return { short: short_term_ok,
+    medium: medium_term_ok,
+    long: long_term_ok}
+end
+
+def remap_groups(groups)
+  groups.reject { |k, v| v == 0 }
+  key_map = { min_short_term_percent: 0,
+    min_medium_term_percent: 1,
+    min_long_term_percent: 2}
+  groups.transform_keys {|k| key_map[k]}
+end
+
+def valid_min_groups(selection, groups, money_spent)
+  return true if groups.values.all? {|g| g == 0 } # If no minimums apply, selection is valid
+  summary = summarise_expenditure(selection)
+  valid = validate_min_expenditures(summary, money_spent, groups)
+  groups = remap_groups(groups)
+  # Comparing arrays in Ruby is not possible with ==
+  # but Set class provides such functionality
+  # hence the casts <Array>.to_set
+  case
+  when groups.keys.to_set == [0].to_set
+    valid[:short]
+  when groups.keys.to_set == [1].to_set
+    valid[:medium]
+  when groups.keys.to_set == [2].to_set
+    valid[:long]
+  when groups.keys.to_set == [0,1].to_set
+    valid[:short] && valid[:medium]
+  when groups.keys.to_set == [0,2].to_set
+    valid[:short] && valid[:long]
+  when groups.keys.to_set == [1,2].to_set
+    valid[:medium] && valid[:long]
+  when groups.keys.to_set == [0,1,2].to_set
+    valid[:short] && valid[:medium] && valid[:long]
+  end
 end
 
 
@@ -120,14 +180,24 @@ if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
     end
     next unless valid_project_constraints(selection)
     next unless valid_min_continents(selection, params[:min_continents])
+    next unless valid_min_groups(selection, params[:groups], params[:money] - money)
     if total_value > best_value
       best_selection = selection.dup
       best_value = total_value
       money_spent = params[:money] - money
+      puts "Efficiency of new best selection of projects (in units of CO2): #{best_value}"
+      puts "Money spent in new best selection of projects (in money units): #{money_spent}"
+      puts "Count of different project locations by continent: #{count_continents(best_selection)}"
+      expenditures = summarise_expenditure(best_selection)
+      puts "Representation per group: "
+      puts "  Short term value (in money units): #{expenditures[:short].to_f}. In percentage #{((expenditures[:short].to_f/money_spent)*100).round(2)}%."
+      puts "  Medium term value (in money units): #{expenditures[:medium].to_f}. In percentage #{((expenditures[:medium].to_f/money_spent)*100).round(2)}%"
+      puts "  Long term value: (in money units) #{expenditures[:long].to_f}. In percentage #{((expenditures[:long].to_f/money_spent)*100).round(2)}%"
+      puts "++++++++++++"
     end
   end
-  puts "Selection: #{best_selection}"
   puts "------------"
-  puts "Acomplished best value: #{best_value}"
+  puts "Best selection: #{best_selection}"
+  puts "Best efficiency achieved (in total units of CO2): #{best_value}"
   puts "Money spent: #{money_spent} / #{params[:money]}"
 end
