@@ -3,10 +3,14 @@
 require 'json'
 require 'optparse'
 
-module Parser
-  OPTIONS = {}
+class InputParser
 
-  def self.read_args
+  def initialize
+    @options = read_args
+  end
+
+  def read_args
+    options = {}
     OptionParser.new do |opts|
       opts.banner = 'Usage: compensatr.rb -f <path> [options]'
       opts.on('-f', '--file <path>', String, 'Source file of projects')
@@ -14,19 +18,27 @@ module Parser
         puts opts
         exit
       end
-    end.parse!(into: OPTIONS)
+    end.parse!(into: options)
 
-    raise OptionParser::MissingArgument if OPTIONS[:file].nil?
+    raise OptionParser::MissingArgument if options[:file].nil?
+
+    options
   end
 
-  def self.read_input_file
-    File.read(OPTIONS[:file])
+  def read_src_data
+    file = read_input_file
+    return unless file
+    parse_input(file)
+  end
+
+  def read_input_file
+    File.read(@options[:file])
   rescue SystemCallError => e
     puts "Error reading file. #{e.inspect}"
     nil
   end
 
-  def self.parse_input(src)
+  def parse_input(src)
     JSON.parse(src, symbolize_names: true)
   rescue JSON::ParserError => e
     puts "Error parsing source data. #{e.inspect}"

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'lib/parser'
+require_relative 'lib/input_parser'
 
 TIME_MAP = {
   'year' => 1,
@@ -78,10 +78,9 @@ end
 
 
 if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
-  Parser.read_args
-  file = Parser.read_input_file
-  exit 1 unless file
-  arr = Parser.parse_input(file)
+  cmd_input = InputParser.new
+  arr = cmd_input.read_src_data
+  exit 1 unless arr
   projects = normalise_time(arr)
   exit 1 if projects.empty?
   enriched_projects = calculate_efficiency(projects)
