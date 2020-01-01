@@ -87,6 +87,11 @@ def valid_project_constraints(selection)
   req_reps
 end
 
+def valid_min_continents(selection, min_continents)
+  different_continents = selection.map { |h| h[:continent] }.uniq.size
+  different_continents >= min_continents
+end
+
 
 if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
   cmd_input = InputParser.new
@@ -113,6 +118,7 @@ if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
       total_value += pick[:yearly_co2_vol]
     end
     next unless valid_project_constraints(selection)
+    next unless valid_min_continents(selection, cmd_input.options[:min_continents])
     if total_value > best_value
       best_selection = selection.dup
       best_value = total_value

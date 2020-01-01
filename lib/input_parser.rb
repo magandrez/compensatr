@@ -12,11 +12,14 @@ class InputParser
   end
 
   def read_args
-    options = {}
+    options = {
+      min_continents: 1
+    }
     OptionParser.new do |opts|
       opts.banner = 'Usage: compensatr.rb -f <path> [options]'
-      opts.on('-f', '--file <path>', String, 'Source file of projects')
-      opts.on('-m', '--money <value>', Float, 'Amount of money to be used')
+      opts.on('-f <path>', '--file <path>', String, 'Source file of projects')
+      opts.on('-m <value>', '--money <value>', Float, 'Amount of money to be used')
+      opts.on('-c <value>', '--min_continents <value>', Integer, 'Minimum number of continents where projects should be distributed, defaults to 1')
       opts.on('-h', '--help', 'Prints this help') do
         puts opts
         exit
