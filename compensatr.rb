@@ -51,6 +51,30 @@ def normalise_time(arr)
   arr
 end
 
+# Enriches arr with efficiency (CO2/year)
+# @param [Array] arr
+# @return [Array] arr with efficiency per project
+def calculate_efficiency(arr)
+  arr.map do |proj|
+    proj[:yearly_co2_vol] = (proj[:co2_volume].to_f / proj[:std_time]).round(4)
+  end
+
+  arr
+end
+
+# Enriches array with price per unit of CO2
+# captured per year
+# @param [Array] array
+# @return [Array] array with price per unit per project
+def calculate_price_per_unit(array)
+  array.map do |proj|
+    proj[:yearly_price] = (proj[:yearly_co2_vol] / proj[:price]).round(2)
+  end
+
+  array
+end
+
+
 if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
   Parser.read_args
   file = Parser.read_input_file
@@ -58,4 +82,6 @@ if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
   arr = Parser.parse_input(file)
   projects = normalise_time(arr)
   exit 1 if projects.empty?
+  enriched_projects = calculate_efficiency(projects)
+  full_data = calculate_price_per_unit(enriched_projects)
 end
