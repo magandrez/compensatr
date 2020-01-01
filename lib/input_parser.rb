@@ -5,6 +5,8 @@ require 'optparse'
 
 class InputParser
 
+  attr_reader :options
+
   def initialize
     @options = read_args
   end
@@ -14,6 +16,7 @@ class InputParser
     OptionParser.new do |opts|
       opts.banner = 'Usage: compensatr.rb -f <path> [options]'
       opts.on('-f', '--file <path>', String, 'Source file of projects')
+      opts.on('-m', '--money <value>', Float, 'Amount of money to be used')
       opts.on('-h', '--help', 'Prints this help') do
         puts opts
         exit

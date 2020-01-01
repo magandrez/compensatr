@@ -8,7 +8,7 @@ TIME_MAP = {
   'day' => 365
 }.freeze
 
-MAX_ITERATIONS = 10000
+MAX_ITERATIONS = 100_000
 
 # Returns an array of projects
 # which time unit is not recognised.
@@ -91,7 +91,7 @@ if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
   best_value = 0
   money_spent = 0
   1.upto(MAX_ITERATIONS) do |i|
-    money = 1000
+    money = cmd_input.options[:money]
     total_value = 0
     selection = []
     while true
@@ -104,11 +104,11 @@ if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
     if total_value > best_value
       best_selection = selection.dup
       best_value = total_value
-      money_spent = 1000 - money
+      money_spent = cmd_input.options[:money] - money
     end
   end
   puts "Selection: #{best_selection}"
   puts "------------"
   puts "Acomplished best value: #{best_value}"
-  puts "Money spent: #{money_spent} / #{1000}"
+  puts "Money spent: #{money_spent} / #{cmd_input.options[:money]}"
 end
