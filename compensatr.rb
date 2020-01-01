@@ -95,6 +95,7 @@ end
 
 if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
   cmd_input = InputParser.new
+  params = cmd_input.params
   arr = cmd_input.read_src_data
   exit 1 unless arr
   projects = normalise_time(arr)
@@ -107,7 +108,7 @@ if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
   best_value = 0
   money_spent = 0
   1.upto(MAX_ITERATIONS) do |i|
-    money = cmd_input.options[:money]
+    money = params[:money]
     total_value = 0
     selection = []
     while true
@@ -118,15 +119,15 @@ if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
       total_value += pick[:yearly_co2_vol]
     end
     next unless valid_project_constraints(selection)
-    next unless valid_min_continents(selection, cmd_input.options[:min_continents])
+    next unless valid_min_continents(selection, params[:min_continents])
     if total_value > best_value
       best_selection = selection.dup
       best_value = total_value
-      money_spent = cmd_input.options[:money] - money
+      money_spent = params[:money] - money
     end
   end
   puts "Selection: #{best_selection}"
   puts "------------"
   puts "Acomplished best value: #{best_value}"
-  puts "Money spent: #{money_spent} / #{cmd_input.options[:money]}"
+  puts "Money spent: #{money_spent} / #{params[:money]}"
 end

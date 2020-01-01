@@ -5,14 +5,14 @@ require 'optparse'
 
 class InputParser
 
-  attr_reader :options
+  attr_reader :params
 
   def initialize
-    @options = read_args
+    @params = read_args
   end
 
   def read_args
-    options = {
+    params = {
       min_continents: 1
     }
     OptionParser.new do |opts|
@@ -24,11 +24,11 @@ class InputParser
         puts opts
         exit
       end
-    end.parse!(into: options)
+    end.parse!(into: params)
 
-    raise OptionParser::MissingArgument if options[:file].nil?
+    raise OptionParser::MissingArgument if params[:file].nil?
 
-    options
+    params
   end
 
   def read_src_data
@@ -38,7 +38,7 @@ class InputParser
   end
 
   def read_input_file
-    File.read(@options[:file])
+    File.read(@params[:file])
   rescue SystemCallError => e
     puts "Error reading file. #{e.inspect}"
     nil

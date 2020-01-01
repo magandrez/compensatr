@@ -18,7 +18,7 @@ RSpec.describe InputParser do
       it 'should store input in a hash ' do
         fake_input = InputParser.new
         expect(fake_input).to be_a(InputParser)
-        fake_opts = fake_input.instance_variable_get(:@options)
+        fake_opts = fake_input.instance_variable_get(:@params)
         expect(fake_opts).to be_a(Hash)
         expect(fake_opts).to have_key(:file)
         expect(fake_opts[:file]).to eq(fixture_path)
