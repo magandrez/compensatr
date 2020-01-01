@@ -8,6 +8,8 @@ TIME_MAP = {
   'day' => 365
 }.freeze
 
+MAX_ITERATIONS = 10000
+
 # Returns an array of projects
 # which time unit is not recognised.
 # Generates regular expressions from the
@@ -84,4 +86,30 @@ if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
   exit 1 if projects.empty?
   enriched_projects = calculate_efficiency(projects)
   full_data = calculate_price_per_unit(enriched_projects)
+
+  # Use brute force to create an optimal selection
+  best_selection = []
+  best_value = 0
+  money_spent = 0
+  1.upto(MAX_ITERATIONS) do |i|
+    money = 1000
+    total_value = 0
+    selection = []
+    while true
+      pick = full_data.shuffle.sample
+      break if (money - pick[:price]) < 0
+      money -= pick[:price]
+      selection.append(pick)
+      total_value += pick[:yearly_co2_vol]
+    end
+    if total_value > best_value
+      best_selection = selection.dup
+      best_value = total_value
+      money_spent = 1000 - money
+    end
+  end
+  puts "Selection: #{best_selection}"
+  puts "------------"
+  puts "Acomplished best value: #{best_value}"
+  puts "Money spent: #{money_spent} / #{1000}"
 end
