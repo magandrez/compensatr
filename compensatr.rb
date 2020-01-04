@@ -2,6 +2,7 @@
 
 require_relative 'lib/input_parser'
 require 'set'
+require 'date'
 
 TIME_MAP = {
   'year' => 1,
@@ -152,6 +153,51 @@ def valid_min_groups(selection, groups, money_spent)
   end
 end
 
+def aggregate_projects(selection)
+  groups = selection.group_by{|h| h[:id]}
+  groups.map do |k,v|
+    agg_hash = v.first
+    agg_hash[:count] = v.count
+    agg_hash[:total_co2_captured] = v.first[:yearly_co2_vol] * v.count
+    agg_hash[:finished] = false # A project is finished when std_time is < 0.
+    agg_hash
+  end
+end
+
+def generate_purchase_plan(selection)
+  aggregated_projects = aggregate_projects(selection)
+  aggregated_projects.map do |proj|
+    {
+      "project_id" => proj[:id],
+      "num_units" => proj[:count],
+      "price" => (proj[:price] * proj[:count]).round(1)
+    }
+  end
+end
+
+def generate_co2_report(selection, years)
+  aggregated_projects = aggregate_projects(selection)
+  this_year = Date.today.year
+  timeline = (this_year..this_year + years).to_a
+  co2_report = timeline.map do |year|
+    active_projects = aggregated_projects.reject{|proj| proj[:finished]}
+    co2_counter = 0
+    active_projects.each do |proj|
+      co2_counter += proj[:total_co2_captured]
+      proj[:std_time] -= 1 # Counted the co2 captured this year
+      # A negative std_time means the project has finished already,
+      # since std_time is time in years
+      proj[:finished] = true if proj[:std_time] < 0
+    end
+    {
+      "year" => year,
+      "co2_captured" => co2_counter.round(1)
+    }
+  end
+
+  co2_report
+end
+
 
 if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
   cmd_input = InputParser.new
@@ -200,4 +246,11 @@ if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
   puts "Best selection: #{best_selection}"
   puts "Best efficiency achieved (in total units of CO2): #{best_value}"
   puts "Money spent: #{money_spent} / #{params[:money]}"
+  purchase_plan = generate_purchase_plan(best_selection)
+  co2_report = generate_co2_report(best_selection, params[:target_years])
+  results = {
+    "purchase_plan" => purchase_plan,
+    "co2_report" => co2_report
+  }
+  cmd_input.write_output_file(results)
 end
