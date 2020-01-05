@@ -2,6 +2,8 @@
 
 require_relative 'lib/input_parser'
 require_relative 'lib/file_handler'
+require_relative 'lib/data_validator'
+require_relative 'lib/output'
 require 'set'
 require 'date'
 
@@ -10,56 +12,10 @@ require 'date'
 # iterates a large amount of times finding out the best selection
 # given the restrictions.
 class Compensatr
-  TIME_MAP = {
-    'year' => 1,
-    'month' => 12,
-    'day' => 365
-  }.freeze
+  include DataValidator
+  include Output
 
   MAX_ITERATIONS = 100_000
-
-  # Returns an array of projects
-  # which time unit is not recognised.
-  # Generates regular expressions from the
-  # standardised time units, matches it against
-  # each of the projects' time_unit returning
-  # deviations.
-  # It is not the main task of this proof-of-concept
-  # to provide a robust validation. For that, look
-  # into implementing something like dry-validation
-  # https://dry-rb.org/gems/dry-validation/1.4/
-  # @param [Array] projects
-  # @return [Array] projects with unrecognisable time units
-  def validate_time_units(projects)
-    units = TIME_MAP.keys
-    res = projects.reject do |pr|
-      units.select { |k| pr[:time_unit].match(k) }.any?
-    end
-    unless res.empty?
-      LOGGER.error "Time units are not recognised \
-      for projects with id: #{res.map { |r| r[:id] }}"
-    end
-    res
-  end
-
-  # Returns an array of projects
-  # with normalised time per project
-  # @param [Array] arr
-  # @return [Array] arr with std_time per project
-  def normalise_time(arr)
-    if arr.empty?
-      LOGGER.error 'No projects to normalise time for. Exiting'
-      return []
-    end
-    results = validate_time_units(arr)
-    return [] unless results.empty?
-
-    # Injects std_time field in each project hash with time in years.
-    arr.map do |proj|
-      proj[:std_time] = (proj[:time].to_f / TIME_MAP[proj[:time_unit]]).round(4)
-    end
-    arr
-  end
 
   # Enriches arr with efficiency (CO2/year)
   # @param [Array] arr
@@ -288,39 +244,6 @@ class Compensatr
     co2_report
   end
 
-  def selection_output(sel, val, spent, available)
-    <<~HEREDOC
-
-      Best selection:
-      #{sel}
-
-      Best efficiency achieved (in total units of CO2): #{val}
-      Money spent over money available: #{spent} / #{available}
-    HEREDOC
-  end
-
-  def new_best_output(value, spent, sel)
-    <<~HEREDOC
-
-      Efficiency of new best selection of projects (in units of CO2): #{value}
-      Money spent in new best selection of projects (in money units): #{spent}
-      Count of different project locations by continent: #{count_continents(sel)}
-    HEREDOC
-  end
-
-  def group_representation_output(expenditures, spent)
-    <<~HEREDOC
-
-      Representation per group:
-        - Short term value (in money): #{expenditures[:short]}.
-        In percentage #{((expenditures[:short] / spent) * 100).round(2)}%.
-        - Medium term value (in money): #{expenditures[:medium]}.
-        In percentage #{((expenditures[:medium] / spent) * 100).round(2)}%.
-        - Long term value: (in money) #{expenditures[:long]}.
-        In percentage #{((expenditures[:long] / spent) * 100).round(2)}%.
-    HEREDOC
-  end
-
   def run
     parser = InputParser.new
     params = parser.parse(ARGV)
@@ -328,7 +251,7 @@ class Compensatr
     file_handler = FileHandler.new(params.file, params.target)
     arr = file_handler.read_data
     exit 1 unless arr
-    projects = normalise_time(arr)
+    projects = DataValidator.normalise_time(arr)
     exit 1 if projects.empty?
     enriched_projects = calculate_efficiency(projects)
 
@@ -358,17 +281,17 @@ class Compensatr
       best_selection = selection.dup
       best_value = total_value
       money_spent = params.money - money
-      log_new_best = new_best_output(best_value, money_spent, best_selection)
-      LOGGER.debug log_new_best
-      expenditures = add_costs(best_selection)
-      log_group_rep = group_representation_output(expenditures, money_spent)
-      LOGGER.debug log_group_rep
-    end
-    log_best_selection = selection_output(best_selection,
-                                          best_value,
+      LOGGER.debug(Output.new_best_output(best_value,
                                           money_spent,
-                                          params.money)
-    LOGGER.info log_best_selection
+                                          count_continents(best_selection)))
+      expenditures = add_costs(best_selection)
+      LOGGER.debug(Output.group_representation_output(expenditures,
+                                                      money_spent))
+    end
+    LOGGER.info(Output.selection_output(best_selection,
+                                        best_value,
+                                        money_spent,
+                                        params.money))
     purchase_plan = generate_purchase_plan(best_selection)
     co2_report = generate_co2_report(best_selection, params.target_years)
     results = {
