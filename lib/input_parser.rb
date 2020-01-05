@@ -10,7 +10,7 @@ class InputParser
   class ScriptOptions
     attr_accessor :target_years, :min_short_term_percent,
                   :min_medium_term_percent, :min_long_term_percent, :target,
-                  :file, :money, :groups, :continents
+                  :file, :money, :groups, :continents, :debug
 
     def initialize
       # Defaults could be extracted to a file
@@ -22,6 +22,7 @@ class InputParser
       self.min_long_term_percent = 0.0
       self.target = './data/output.json'
       self.continents = 1
+      self.debug = false
     end
 
     def file_to_parse(parser)
@@ -38,7 +39,7 @@ class InputParser
                 '--target <path>',
                 String,
                 "Target file where result is stored. \
-Defaults to ./output.json") do |t|
+Defaults to ./data/output.json") do |t|
         self.target = t
       end
     end
@@ -95,6 +96,12 @@ distributed, defaults to 1") do |con|
       end
     end
 
+    def debug_flag(parser)
+      parser.on('-v', '--[no-]verbose', 'Run verbosely') do |v|
+        self.debug = v
+      end
+    end
+
     def define_options(parser)
       parser.banner = 'Usage: compensatr.rb -f <path> [options]'
       parser.separator 'Options:'
@@ -106,6 +113,7 @@ distributed, defaults to 1") do |con|
       min_short_group(parser)
       min_medium_group(parser)
       min_long_group(parser)
+      debug_flag(parser)
       parser.on_tail('-h', '--help', 'Show options') { puts parser; exit }
     end
   end

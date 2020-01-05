@@ -17,7 +17,7 @@ class FileHandler
     begin
       str = File.read(@src_file)
     rescue SystemCallError => e
-      puts "Error reading file. #{e.inspect}"
+      LOGGER.error "Error reading file. #{e.inspect}"
       nil
     end
     return nil unless str
@@ -32,7 +32,7 @@ class FileHandler
   def parse_input(src)
     JSON.parse(src, symbolize_names: true)
   rescue JSON::ParserError => e
-    puts "Error parsing source data. #{e.inspect}"
+    LOGGER.error "Error parsing source data. #{e.inspect}"
     nil
   end
 

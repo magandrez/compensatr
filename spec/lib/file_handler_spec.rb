@@ -13,6 +13,8 @@ RSpec.describe FileHandler do
   describe '#read_data' do
     context 'with proper input' do
       it 'should return the contents of the file parsed' do
+        stub_const('LOGGER', Logger.new(nil))
+        allow(LOGGER).to receive(:error).and_return nil
         handler = FileHandler.new(source_path, nil)
         expect(handler.read_data).to be_a(Array)
       end
@@ -20,6 +22,8 @@ RSpec.describe FileHandler do
 
     context 'with improper input' do
       it 'should log an error and return nil if there is any problem accessing the file' do
+        stub_const('LOGGER', Logger.new(nil))
+        allow(LOGGER).to receive(:error).and_return nil
         handler = FileHandler.new(invalid_fixture, nil)
         expect(handler.read_data).to be nil
       end
@@ -29,6 +33,8 @@ RSpec.describe FileHandler do
   describe '#parse_input' do
     context 'from a file containing valid JSON' do
       it 'should read the content and parse it into Ruby objects' do
+        stub_const('LOGGER', Logger.new(nil))
+        allow(LOGGER).to receive(:error).and_return nil
         handler = FileHandler.new(source_path, nil)
         parsed_content = handler.parse_input(valid_fixture)
         expect(parsed_content).to be_a(Array)
@@ -38,6 +44,8 @@ RSpec.describe FileHandler do
 
     context 'from a file containing invalid JSON' do
       it 'should return nil' do
+        stub_const('LOGGER', Logger.new(nil))
+        allow(LOGGER).to receive(:error).and_return nil
         handler = FileHandler.new(source_path, nil)
         parsed_content = handler.parse_input(invalid_fixture)
         expect(parsed_content).to be nil
