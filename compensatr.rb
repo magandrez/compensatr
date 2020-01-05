@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'lib/input_parser'
+require_relative 'lib/file_handler'
 require 'set'
 require 'date'
 
@@ -282,9 +283,10 @@ end
 
 # MAIN
 if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
-  cmd_input = InputParser.new
-  params = cmd_input.params
-  arr = cmd_input.read_src_data
+  parser = InputParser.new
+  params = parser.parse(ARGV)
+  file_handler = FileHandler.new(params.file, params.target)
+  arr = file_handler.read_data
   exit 1 unless arr
   projects = normalise_time(arr)
   exit 1 if projects.empty?
@@ -295,11 +297,11 @@ if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
   best_value = 0
   money_spent = 0
   1.upto(MAX_ITERATIONS) do |_i|
-    money = params[:money]
+    money = params.money
     total_value = 0
     selection = []
     loop do
-      pick = enriched_projects.shuffle.sample
+      pick = enriched_projects.sample
       break if (money - pick[:price]).negative?
 
       money -= pick[:price]
@@ -307,16 +309,13 @@ if $PROGRAM_NAME == __FILE__ # Let the script run unless Rspec is the caller
       total_value += pick[:yearly_co2_vol]
     end
     next unless valid_project_constraints(selection)
-    next unless valid_min_continents(selection, params[:min_continents])
-    unless valid_min_groups(selection, params[:groups], params[:money] - money)
-      next
-    end
-
+    next unless valid_min_continents(selection, params.continents)
+    next unless valid_min_groups(selection, params.groups, params.money - money)
     next unless total_value > best_value
 
     best_selection = selection.dup
     best_value = total_value
-    money_spent = params[:money] - money
+    money_spent = params.money - money
     puts "Efficiency of new best selection of projects (in units of CO2):\
           #{best_value}"
     puts "Money spent in new best selection of projects (in money units):\
@@ -336,12 +335,12 @@ money_spent) * 100).round(2)}%."
   end
   puts " ------------ \n Best selection: \n #{best_selection}"
   puts "Best efficiency achieved (in total units of CO2): #{best_value}"
-  puts "Money spent: #{money_spent} / #{params[:money]}"
+  puts "Money spent: #{money_spent} / #{params.money}"
   purchase_plan = generate_purchase_plan(best_selection)
-  co2_report = generate_co2_report(best_selection, params[:target_years])
+  co2_report = generate_co2_report(best_selection, params.target_years)
   results = {
     'purchase_plan' => purchase_plan,
     'co2_report' => co2_report
   }
-  cmd_input.write_output_file(results)
+  file_handler.write_data(results)
 end
