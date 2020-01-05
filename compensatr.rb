@@ -15,7 +15,69 @@ class Compensatr
   include DataValidator
   include Output
 
-  MAX_ITERATIONS = 100_000
+  MAX_ITERATIONS = 200_000
+
+  def run
+    parser = InputParser.new
+    params = parser.parse(ARGV)
+    LOGGER.level = Logger::DEBUG if params.debug
+    file_handler = FileHandler.new(params.file, params.target)
+    arr = file_handler.read_data
+    exit 1 unless arr
+    projects = DataValidator.normalise_time(arr)
+    exit 1 if projects.empty?
+    enriched_projects = calculate_efficiency(projects)
+
+    # Use brute force to create an optimal selection
+    selection, value, money_spent = main_loop(enriched_projects, params)
+    LOGGER.info(Output.selection_output(selection,
+                                        value,
+                                        money_spent,
+                                        params.money))
+    purchase_plan = generate_purchase_plan(selection)
+    co2_report = generate_co2_report(selection, params.target_years)
+    results = {
+      'purchase_plan' => purchase_plan,
+      'co2_report' => co2_report
+    }
+    file_handler.write_data(results)
+  end
+
+  def main_loop(projects, params)
+    best_selection = []
+    money_spent = 0
+    best_value = 0
+    1.upto(MAX_ITERATIONS) do |_i|
+      money = params.money
+      total_value = 0
+      selection = []
+      loop do
+        pick = projects.sample
+        break if (money - pick[:price]).negative?
+
+        money -= pick[:price]
+        selection.append(pick)
+        total_value += pick[:yearly_co2_vol]
+      end
+      next unless valid_project_constraints(selection)
+      next unless valid_min_continents(selection, params.continents)
+      unless valid_min_groups(selection, params.groups, params.money - money)
+        next
+      end
+      next unless total_value > best_value
+
+      best_selection = selection.dup
+      best_value = total_value
+      money_spent = params.money - money
+      LOGGER.debug(Output.new_best_output(best_value,
+                                          money_spent,
+                                          count_continents(best_selection)))
+      expenditures = add_costs(best_selection)
+      LOGGER.debug(Output.group_representation_output(expenditures,
+                                                      money_spent))
+    end
+    [best_selection, best_value, money_spent]
+  end
 
   # Enriches arr with efficiency (CO2/year)
   # @param [Array] arr
@@ -242,62 +304,5 @@ class Compensatr
     end
 
     co2_report
-  end
-
-  def run
-    parser = InputParser.new
-    params = parser.parse(ARGV)
-    LOGGER.level = Logger::DEBUG if params.debug
-    file_handler = FileHandler.new(params.file, params.target)
-    arr = file_handler.read_data
-    exit 1 unless arr
-    projects = DataValidator.normalise_time(arr)
-    exit 1 if projects.empty?
-    enriched_projects = calculate_efficiency(projects)
-
-    # Use brute force to create an optimal selection
-    best_selection = []
-    best_value = 0
-    money_spent = 0
-    1.upto(MAX_ITERATIONS) do |_i|
-      money = params.money
-      total_value = 0
-      selection = []
-      loop do
-        pick = enriched_projects.sample
-        break if (money - pick[:price]).negative?
-
-        money -= pick[:price]
-        selection.append(pick)
-        total_value += pick[:yearly_co2_vol]
-      end
-      next unless valid_project_constraints(selection)
-      next unless valid_min_continents(selection, params.continents)
-      unless valid_min_groups(selection, params.groups, params.money - money)
-        next
-      end
-      next unless total_value > best_value
-
-      best_selection = selection.dup
-      best_value = total_value
-      money_spent = params.money - money
-      LOGGER.debug(Output.new_best_output(best_value,
-                                          money_spent,
-                                          count_continents(best_selection)))
-      expenditures = add_costs(best_selection)
-      LOGGER.debug(Output.group_representation_output(expenditures,
-                                                      money_spent))
-    end
-    LOGGER.info(Output.selection_output(best_selection,
-                                        best_value,
-                                        money_spent,
-                                        params.money))
-    purchase_plan = generate_purchase_plan(best_selection)
-    co2_report = generate_co2_report(best_selection, params.target_years)
-    results = {
-      'purchase_plan' => purchase_plan,
-      'co2_report' => co2_report
-    }
-    file_handler.write_data(results)
   end
 end
