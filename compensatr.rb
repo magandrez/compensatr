@@ -7,7 +7,7 @@ require_relative 'lib/output'
 require 'set'
 require 'date'
 
-# Class implementing algorithm to find a suitable selection
+# Class that implements algorithm to find a suitable selection
 # of projects that meet input criteria. The algorithm
 # iterates a large amount of times finding out the best selection
 # given the restrictions.
@@ -17,7 +17,12 @@ class Compensatr
 
   MAX_ITERATIONS = 200_000
 
+  # Entrypoint for script. Receives ARGV from
+  # console, parses them and quicks in the search
+  # for a combination of projects that fit crteria
+  # maximising output and minimising cost.
   def run
+    # Register input and enrich data
     parser = InputParser.new
     params = parser.parse(ARGV)
     LOGGER.level = Logger::DEBUG if params.debug
@@ -34,6 +39,11 @@ class Compensatr
                                         value,
                                         money_spent,
                                         params.money))
+    # At this point, a best selection is reached
+    # A "correction round" could be implemented
+    # to fill in the remaining value.
+    # This is left as improvement similarly as the main loop
+    # TODO Implement correction round
     purchase_plan = generate_purchase_plan(selection)
     co2_report = generate_co2_report(selection, params.target_years)
     results = {
@@ -43,14 +53,24 @@ class Compensatr
     file_handler.write_data(results)
   end
 
+  # Brute forces a selection of projects by
+  # trial-and-error, saving the most efficient combination
+  # between loops and doing constraint checks to validate
+  # the selection of projects achieved in each iteration
+  #
+  # @param [Array] projects source for the selection
+  # @param [InputParser] params input by the user with defaults
   def main_loop(projects, params)
     best_selection = []
     money_spent = 0
     best_value = 0
+
     1.upto(MAX_ITERATIONS) do |_i|
       money = params.money
       total_value = 0
       selection = []
+
+      # Achieve a selection
       loop do
         pick = projects.sample
         break if (money - pick[:price]).negative?
@@ -59,6 +79,8 @@ class Compensatr
         selection.append(pick)
         total_value += pick[:yearly_co2_vol]
       end
+
+      # Verify the selection is valid or move onto the next iteration
       next unless valid_project_constraints(selection)
       next unless valid_min_continents(selection, params.continents)
       unless valid_min_groups(selection, params.groups, params.money - money)
@@ -66,6 +88,7 @@ class Compensatr
       end
       next unless total_value > best_value
 
+      # If it is better than previous selection, save it
       best_selection = selection.dup
       best_value = total_value
       money_spent = params.money - money
@@ -92,6 +115,7 @@ class Compensatr
   end
 
   # Validates minimum units for selected project
+  #
   # @param [Integer] count of project in selection
   # @param [Hash] proj
   # @return [TrueClass, FalseClass] true if project is within min boundaries
@@ -110,6 +134,7 @@ class Compensatr
   # Each project repetition in the selection array means 1 credit
   # valid_project_constraints validates that the minimum and maximum
   # units per project are met
+  #
   # @param [Array] selection of projects
   # @return [TrueClass, FalseClass] true if valid, false otherwise
   def valid_project_constraints(selection)
@@ -127,6 +152,7 @@ class Compensatr
   end
 
   # Counts the distribution of selected projects per continent
+  #
   # @param [Array] projects
   # @param [Integer]
   def count_continents(projects)
@@ -144,6 +170,7 @@ class Compensatr
   end
 
   # Adds cost of short term projects in selection
+  #
   # @param [Array] projects
   # @return [Float]
   def sum_short_term(projects)
@@ -162,6 +189,7 @@ class Compensatr
   end
 
   # Adds cost of long term projects in selection
+  #
   # @param [Array] projects
   # @return [Float]
   def sum_long_term(projects)
@@ -172,6 +200,7 @@ class Compensatr
 
   # Summarises the costs of purchasing credits per
   # type of project returning a hash with prices
+  #
   # @param [Array] projects
   # @return [Hash] containing added costs per project group
   def add_costs(projects)
@@ -182,8 +211,9 @@ class Compensatr
 
   # Verifies the distribution of money per project group is
   # within the minimum required per group
+  #
   # @param [Float, nilClass] value spent in specific project groups
-  # value might be nil (lack of projects in said group).
+  #   value might be nil (lack of projects in said group).
   # @param [Float] expenditure total money spent
   # @param [Float] min money required to be spent per group
   # @return [TrueClass, FalseClass] true if the value spent is above the minimum
@@ -194,6 +224,7 @@ class Compensatr
   end
 
   # Aggregates the validations of money distribution per group
+  #
   # @param [Hash] sums money per project group
   # @param [Float] total_money spent
   # @param [Hash] groups containing min percentage of money to be spent in group
@@ -225,6 +256,7 @@ class Compensatr
   # Applies all combinations of possible minimum percentages registered
   # at input time. Comparing arrays in Ruby is not possible with '=='
   # but Set class provides such functionality, hence the casts <Array>.to_set
+  #
   # @param [Array] selection of projects
   # @param [Hash] groups specifying minimal expenditure per group
   # @param [Float] money_spent on selection
@@ -253,6 +285,7 @@ class Compensatr
   end
 
   # Agregates projects per project id and adds totals
+  #
   # @param [Array] selection of projects
   # @return [Array] aggregated selection of projects per project id
   def aggregate_projects(selection)
@@ -269,6 +302,7 @@ class Compensatr
   # Based on the best selection, creates a hash
   # containing the units purchased, the project id and
   # the total price for the operation
+  #
   # @param [Array] selection
   # @return [Array] array of hashes containing purchase plan
   def generate_purchase_plan(selection)
@@ -280,12 +314,14 @@ class Compensatr
     end
   end
 
-  # Based on the best selection, creates a CO2 report of
-  # for each of the years requested at input, calculating CO2 captured.
+  # Based on the best selection, creates a CO2 report 
+  # for each of the years requested at input.
   # Each year might be projects that are not active anymore
   # thus, we don't count them for said year onwards.
-  # std_time per project is minused A negative std_time means
-  # the project "has finished" (we don't count the potential CO2 captured)
+  # std_time per project is minused for this reason.
+  # A negative std_time means the project "has finished"
+  # and its potential CO2 captured is not counted.
+  #
   # @param [Array] selection of most suitable projects
   # @param [Integer] years for which to calculate the CO2 captured
   def generate_co2_report(selection, years)
