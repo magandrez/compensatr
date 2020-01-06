@@ -12,14 +12,14 @@ module DataValidator
   # Returns an array of projects
   # with normalised time per project
   # @param [Array] arr
-  # @return [Array] arr with std_time per project
+  # @return [Array] arr with std_time per project if all OK
   def self.normalise_time(arr)
-    if arr.empty?
-      LOGGER.error 'No projects to normalise time for. Exiting'
-      return []
+    invalid = invalid_time_units(arr).empty?
+    unless invalid
+      LOGGER.error "Time units are not recognised \
+      for projects with id: #{res.map { |r| r[:id] }}. Exiting"
+      exit 1
     end
-    results = validate_time_units(arr)
-    return [] unless results.empty?
 
     # Injects std_time field in each project hash with time in years.
     arr.map do |proj|
@@ -38,17 +38,12 @@ module DataValidator
   # to provide a robust validation. For that, look
   # into implementing something like dry-validation
   # https://dry-rb.org/gems/dry-validation/1.4/
-  # @param [Array] projects
+  # @param [Array] projects to validate time
   # @return [Array] projects with unrecognisable time units
-  def self.validate_time_units(projects)
+  def self.invalid_time_units(projects)
     units = TIME_MAP.keys
-    res = projects.reject do |pr|
+    projects.reject do |pr|
       units.select { |k| pr[:time_unit].match(k) }.any?
     end
-    unless res.empty?
-      LOGGER.error "Time units are not recognised \
-      for projects with id: #{res.map { |r| r[:id] }}"
-    end
-    res
   end
 end

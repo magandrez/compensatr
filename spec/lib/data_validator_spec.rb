@@ -1,5 +1,11 @@
+# frozen_string_literal: true
+
+require 'spec_helper'
+require './lib/data_validator'
+require 'json'
+
 describe DataValidator do
-  describe '#validate_time_units' do
+  describe '#invalid_time_units' do
     let(:projects) {
       fixture = File.expand_path('./spec/fixtures/fixture.json')
       str = File.read(fixture)
@@ -8,7 +14,7 @@ describe DataValidator do
 
     context 'with recognised date units given as data' do
       it 'should return empty array' do
-        validation_result = DataValidator.validate_time_units(projects)
+        validation_result = DataValidator.invalid_time_units(projects)
         expect(validation_result).to be_an(Array)
         expect(validation_result.empty?).to be true
       end
@@ -19,7 +25,7 @@ describe DataValidator do
         stub_const('LOGGER', Logger.new(nil))
         allow(LOGGER).to receive(:error).and_return nil
         projects.first[:time_unit] = "week" # Date unit not supported
-        validation_result = DataValidator.validate_time_units(projects)
+        validation_result = DataValidator.invalid_time_units(projects)
         expect(validation_result).to be_an(Array)
         expect(validation_result.empty?).to be false
         expect(validation_result.first[:id]).to eq "p1"

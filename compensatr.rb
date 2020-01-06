@@ -28,9 +28,11 @@ class Compensatr
     LOGGER.level = Logger::DEBUG if params.debug
     file_handler = FileHandler.new(params.file, params.target)
     arr = file_handler.read_data
-    exit 1 unless arr
+    if arr.nil? && arr.empty?
+      LOGGER.error 'No projects to work on. Exiting'
+      exit 1
+    end
     projects = DataValidator.normalise_time(arr)
-    exit 1 if projects.empty?
     enriched_projects = calculate_efficiency(projects)
 
     # Use brute force to create an optimal selection
@@ -314,7 +316,7 @@ class Compensatr
     end
   end
 
-  # Based on the best selection, creates a CO2 report 
+  # Based on the best selection, creates a CO2 report
   # for each of the years requested at input.
   # Each year might be projects that are not active anymore
   # thus, we don't count them for said year onwards.

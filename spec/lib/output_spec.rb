@@ -1,5 +1,8 @@
-require 'pry'
+# frozen_string_literal: true
+
+require 'spec_helper'
 require './lib/output'
+
 describe Output do
   let(:project) {
     fixture = File.expand_path('./spec/fixtures/fixture.json')
