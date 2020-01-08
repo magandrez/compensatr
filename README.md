@@ -23,7 +23,7 @@ The search is performed by "brute forcing" a set of projects that match the abov
 
 ## The rationales behind the solution
 
-- The solution is suboptimal...for now. The explanation for this is well captured by [Kent Beck](https://en.wikipedia.org/wiki/Kent_Beck)'s famous quote: *"Make it work, make it right, make it fast"*. For improvements see[Proposed improvements](#proposed-improvements).
+- The solution is suboptimal...for now. The explanation for this is well captured by [Kent Beck](https://en.wikipedia.org/wiki/Kent_Beck)'s famous quote: *"Make it work, make it right, make it fast"*. For improvements see [Proposed improvements](#proposed-improvements).
 
 - The solution is **coded in pure Ruby**. Ruby is not the fastest on the bunch, but is great for transmitting and shaping raw ideas into a script (flexibility and developer comfort before performance, for this specific task).
 
@@ -53,6 +53,12 @@ $ git clone git@github.com:magandrez/compensatr.git .
 $ cd compensatr
 ruby-2.6.5 - #gemset created /Users/spav/.rvm/gems/ruby-2.6.5@compensatr
 ruby-2.6.5 - #generating compensatr wrappers - please wait
+
+#Install latest bundler (for development)
+$ gem install bundler -v 2.0.2
+
+# Update bundler and install gems stated in Gemfile (for development)
+$ bundle update --bundler
 ```
 5. The solution is coded in pure Ruby, no additional gems are needed (for running the script). 
   Run the script following the script's help for information on the input parameters. 
