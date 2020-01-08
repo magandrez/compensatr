@@ -2,6 +2,7 @@
 
 require 'spec_helper'
 require './lib/output'
+require 'json'
 
 describe Output do
   let(:project) {
@@ -51,7 +52,6 @@ describe Output do
     end
   end
 
-  
   describe '#group_representation_output' do
     context 'with one project as input' do
       it 'should return a string with group info data' do

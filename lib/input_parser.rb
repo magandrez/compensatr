@@ -103,7 +103,7 @@ distributed, defaults to 1") do |con|
     end
 
     def define_options(parser)
-      parser.banner = 'Usage: compensatr.rb -f <path> [options]'
+      parser.banner = 'Usage: compensatr.rb -f <path> -m <value> [options]'
       parser.separator 'Options:'
       file_to_parse(parser)
       target_to_serialise(parser)
@@ -114,7 +114,10 @@ distributed, defaults to 1") do |con|
       min_medium_group(parser)
       min_long_group(parser)
       debug_flag(parser)
-      parser.on_tail('-h', '--help', 'Show options') { puts parser; exit }
+      parser.on_tail('-h', '--help', 'Show options') do |_h|
+        puts parser
+        exit
+      end
     end
   end
 
@@ -126,8 +129,14 @@ distributed, defaults to 1") do |con|
       @options.define_options(parser)
       parser.parse!(args)
     end
-    raise OptionParser::MissingArgument if @options.file.nil?
-
+    if @options.file.nil?
+      raise OptionParser::MissingArgument, "Mandatory source file \
+not provided. Check script help for an overview on the parameters."
+    end
+    if @options.money.nil?
+      raise OptionParser::MissingArgument, "Mandatory money value \
+not provided. Check script help for an overview on the paramaters."
+    end
     save_groups!
     @options
   end

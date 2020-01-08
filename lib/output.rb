@@ -39,12 +39,12 @@ module Output
     <<~HEREDOC
 
       Representation per group:
-        - Short term value (in money): #{expenditures[:short]}.
-        In percentage #{((expenditures[:short] / spent) * 100).round(2)}%.
-        - Medium term value (in money): #{expenditures[:medium]}.
-        In percentage #{((expenditures[:medium] / spent) * 100).round(2)}%.
-        - Long term value: (in money) #{expenditures[:long]}.
-        In percentage #{((expenditures[:long] / spent) * 100).round(2)}%.
+        - Short term value (in money): #{expenditures[:short]}
+        In percentage #{((expenditures[:short].to_f / spent) * 100).round(2)}%
+        - Medium term value (in money): #{expenditures[:medium]}
+        In percentage #{((expenditures[:medium].to_f / spent) * 100).round(2)}%
+        - Long term value: (in money) #{expenditures[:long]}
+        In percentage #{((expenditures[:long].to_f / spent) * 100).round(2)}%
     HEREDOC
   end
 end

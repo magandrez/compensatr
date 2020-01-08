@@ -14,11 +14,11 @@ module DataValidator
   # @param [Array] arr
   # @return [Array] arr with std_time per project if all OK
   def self.normalise_time(arr)
-    invalid = invalid_time_units(arr).empty?
-    unless invalid
+    invalid = invalid_time_units(arr)
+    unless invalid.empty?
       LOGGER.error "Time units are not recognised \
-      for projects with id: #{res.map { |r| r[:id] }}. Exiting"
-      exit 1
+for projects with id: #{invalid.map { |r| r[:id] }}. Exiting."
+      return nil
     end
 
     # Injects std_time field in each project hash with time in years.

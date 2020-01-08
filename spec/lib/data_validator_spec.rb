@@ -22,8 +22,6 @@ describe DataValidator do
 
     context 'with unrecognised date units given as data' do
       it 'should return an array with first project containing unrecognisable date unit' do
-        stub_const('LOGGER', Logger.new(nil))
-        allow(LOGGER).to receive(:error).and_return nil
         projects.first[:time_unit] = "week" # Date unit not supported
         validation_result = DataValidator.invalid_time_units(projects)
         expect(validation_result).to be_an(Array)
@@ -44,6 +42,13 @@ describe DataValidator do
       normalised_arr = DataValidator.normalise_time(projects)
       expect(normalised_arr).to be_an(Array)
       expect(normalised_arr.first[:std_time]).to eq(0.0055) # 2 days in years
+    end
+
+    it 'should log an error and return nil' do
+      stub_const('LOGGER', Logger.new(nil))
+      allow(LOGGER).to receive(:error)
+      projects.first[:time_unit] = "week" # Date unit not supported
+      expect(DataValidator.normalise_time(projects)).to eq nil
     end
   end
 end
