@@ -5,5 +5,7 @@ source 'https://rubygems.org' do
     gem 'pry'
     gem 'rspec', '~> 3.0'
     gem 'rubocop'
+    gem 'simplecov'
+    gem 'simplecov-lcov'
   end
 end
