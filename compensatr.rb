@@ -22,6 +22,8 @@ class Compensatr
   # for a combination of projects that fit crteria
   # maximising output and minimising cost.
   def run
+    start_time = Time.now
+    LOGGER.info "Compensatr calculator started."
     # Register input and enrich data
     parser = InputParser.new
     params = parser.parse(ARGV)
@@ -34,6 +36,7 @@ class Compensatr
     enriched_projects = calculate_efficiency(projects)
 
     # Use brute force to create an optimal selection
+    LOGGER.info "Starting calculation of optimal selection of projects."
     selection, value, money_spent = main_loop(enriched_projects, params)
     LOGGER.info(Output.selection_output(selection,
                                         value,
@@ -51,6 +54,7 @@ class Compensatr
       'co2_report' => co2_report
     }
     file_handler.write_data(results)
+    LOGGER.info "Search finished. Time spent (in min): #{(Time.now - start_time) / 60}"
   end
 
   # Brute forces a selection of projects by
@@ -64,7 +68,7 @@ class Compensatr
     best_selection = []
     money_spent = 0
     best_value = 0
-
+    projects.shuffle!
     1.upto(MAX_ITERATIONS) do |_i|
       money = params.money
       total_value = 0
@@ -79,14 +83,31 @@ class Compensatr
         selection.append(pick)
         total_value += pick[:yearly_co2_vol]
       end
-
+      LOGGER.debug "New selection candidate reached. \
+Verfying constraints for selection."
       # Verify the selection is valid or move onto the next iteration
-      next unless valid_project_constraints(selection)
-      next unless valid_min_continents(selection, params.continents)
-      next unless valid_min_groups(selection, params.groups)
+      unless valid_project_constraints(selection)
+        LOGGER.debug "New selection candidate failed project constraints.\
+ Searching new selection."
+        next
+      end
+      unless valid_min_continents(selection, params.continents)
+        LOGGER.debug "New selection candidate failed equitative geographical \
+distribution constraint. Searching new selection."
+        next
+      end
+      unless valid_min_groups(selection, params.groups)
+        LOGGER.debug "New selection candidate failed equitative group \
+distribution constraint. Searching new selection."
+        next
+      end
       # Is it the best?
-      next unless total_value > best_value
-
+      unless total_value > best_value
+        LOGGER.debug "New selection candidate is not the best selection recorded. \
+Searching new selection."
+        next
+      end
+      LOGGER.debug "New best selection found."
       # If it is better than previous selection, save it
       best_selection = selection.dup
       best_value = total_value
