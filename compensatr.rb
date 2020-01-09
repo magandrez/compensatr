@@ -164,16 +164,12 @@ Searching new selection."
   # @return [TrueClass, FalseClass] true if valid, false otherwise
   def valid_project_constraints(selection)
     reps = selection.each_with_object(Hash.new(0)) { |h1, h2| h2[h1[:id]] += 1 }
-    req_reps = selection.all? do |proj|
+    invalid_projects = selection.reject do |proj|
       count = reps[proj[:id]]
-      unless meets_min_units(count, proj) && meets_max_units(count, proj)
-        return false
-      end
-
-      true
+      meets_min_units(count, proj) && meets_max_units(count, proj)
     end
 
-    req_reps
+    invalid_projects.empty?
   end
 
   # Counts the distribution of selected projects per continent
